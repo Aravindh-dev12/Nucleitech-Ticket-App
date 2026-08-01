@@ -1,0 +1,9 @@
+{
+  "name": "nuclei-tech-mock-scada",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Local WebSocket simulator for NUCLEI TECH frontend testing",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

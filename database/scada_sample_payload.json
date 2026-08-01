@@ -1,0 +1,40 @@
+{
+  "siteId": "via-4mw",
+  "data": {
+    "plant_status": "Online",
+    "active_power": 812.4,
+    "today_energy": 3820.7,
+    "total_energy": 19500211.8,
+    "irradiance": 764.2,
+    "grid_voltage": 415.8,
+    "grid_frequency": 50.01,
+    "performance_ratio": 78.4,
+    "inverters": [
+      {
+        "name": "Inverter 01",
+        "status": "Online",
+        "active_power": 101.4,
+        "dc_voltage": 825.1,
+        "ac_voltage": 415.4,
+        "temperature": 43.2
+      },
+      {
+        "name": "Inverter 02",
+        "status": "Online",
+        "active_power": 98.7,
+        "dc_voltage": 819.2,
+        "ac_voltage": 415.9,
+        "temperature": 41.8
+      }
+    ],
+    "vcbs": [
+      {
+        "name": "Main VCB",
+        "status": "Closed",
+        "voltage": 11000,
+        "current": 43.6,
+        "trip_status": "Healthy"
+      }
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "nuclei-tech/scada-ticketing-api",
+  "description": "NUCLEI TECH ticketing and SCADA configuration API",
+  "require": {
+    "phpmailer/phpmailer": "^6.10"
+  }
+}
