@@ -169,9 +169,6 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
                         runSpacing: 8,
                         children: [
                           StatusBadge(value: widget.plant.capacityLabel),
-                          StatusBadge(
-                            value: 'ID ${widget.plant.scadaSiteId}',
-                          ),
                         ],
                       ),
                     ],

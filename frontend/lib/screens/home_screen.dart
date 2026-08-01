@@ -303,10 +303,6 @@ class _PlantCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   _Chip(icon: Icons.bolt, text: plant.capacityLabel),
-                  _Chip(
-                    icon: Icons.memory,
-                    text: 'ID: ${plant.scadaSiteId}',
-                  ),
                 ],
               ),
               const Spacer(),

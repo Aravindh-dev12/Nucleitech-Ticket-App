@@ -235,7 +235,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                         ),
                         const SizedBox(height: 5),
                         Text(
-                          'SCADA ID: ${ticket['scada_site_id']} • '
                           'Raised by ${ticket['raised_by_name']} • '
                           '${formatDate(ticket['created_at'])}',
                         ),

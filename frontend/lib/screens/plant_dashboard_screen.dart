@@ -167,10 +167,6 @@ class _PlantHeader extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               _HeaderChip(icon: Icons.bolt, text: plant.capacityLabel),
-              _HeaderChip(
-                icon: Icons.memory,
-                text: 'SCADA ID: ${plant.scadaSiteId}',
-              ),
               StatusBadge(value: _stateName(scada.state)),
               if (scada.lastUpdated != null)
                 Text(
