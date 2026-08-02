@@ -177,7 +177,7 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
               ),
               const SizedBox(height: 18),
               DropdownButtonFormField<String>(
-                value: _category,
+                initialValue: _category,
                 decoration: const InputDecoration(
                   labelText: 'Issue Category',
                   prefixIcon: Icon(Icons.category_outlined),
@@ -203,10 +203,9 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
                   hintText: 'Example: Inverter 3 is showing a fault',
                   prefixIcon: Icon(Icons.title),
                 ),
-                validator: (value) =>
-                    value == null || value.trim().length < 5
-                        ? 'Enter a clear issue title.'
-                        : null,
+                validator: (value) => value == null || value.trim().length < 5
+                    ? 'Enter a clear issue title.'
+                    : null,
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -219,14 +218,13 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
                       'Explain the fault, device name, error code, time, and what was already checked.',
                   alignLabelWithHint: true,
                 ),
-                validator: (value) =>
-                    value == null || value.trim().length < 10
-                        ? 'Describe the issue in more detail.'
-                        : null,
+                validator: (value) => value == null || value.trim().length < 10
+                    ? 'Describe the issue in more detail.'
+                    : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _priority,
+                initialValue: _priority,
                 decoration: const InputDecoration(
                   labelText: 'Priority',
                   prefixIcon: Icon(Icons.priority_high),
@@ -276,9 +274,7 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    for (var index = 0;
-                        index < _images.length;
-                        index++)
+                    for (var index = 0; index < _images.length; index++)
                       _ImagePreview(
                         file: _images[index],
                         onRemove: () {

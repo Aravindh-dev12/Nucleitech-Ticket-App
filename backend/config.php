@@ -4,12 +4,12 @@ declare(strict_types=1);
 return [
     'db_host' => '127.0.0.1',
     'db_port' => 3306,
-    'db_name' => 'nuclei_tech',
+    'db_name' => 'nuclei_tech_ticket',
     'db_user' => 'root',
     'db_password' => '',
 
     // Public URL of this backend, without a trailing slash.
-    'app_url' => 'http://localhost:8080',
+    'app_url' => 'http://161.97.87.75/ticket',
     'allowed_origins' => ['*'],
 
     'owner_email' => 'nfo.nucleitech@gmail.com',

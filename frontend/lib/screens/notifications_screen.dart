@@ -11,8 +11,7 @@ class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() =>
-      _NotificationsScreenState();
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
@@ -93,8 +92,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     title: Text(
                       item['title']?.toString() ?? '',
                       style: TextStyle(
-                        fontWeight:
-                            isRead ? FontWeight.w500 : FontWeight.w900,
+                        fontWeight: isRead ? FontWeight.w500 : FontWeight.w900,
                       ),
                     ),
                     subtitle: Padding(

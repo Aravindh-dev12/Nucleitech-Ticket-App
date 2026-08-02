@@ -5,6 +5,18 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+function respond(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$action = $_GET['action'] ?? '';
+if ($action === 'health') {
+    respond(['success' => true, 'message' => 'NUCLEI TECH API is running.']);
+}
+
 $configFile = __DIR__ . '/config.php';
 if (!file_exists($configFile)) {
     http_response_code(500);
@@ -29,13 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function respond(array $payload, int $status = 200): never
-{
-    http_response_code($status);
-    echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
 function getDb(array $config): mysqli
 {
     static $db = null;
@@ -43,16 +48,22 @@ function getDb(array $config): mysqli
         return $db;
     }
 
-    $db = new mysqli(
-        $config['db_host'],
-        $config['db_user'],
-        $config['db_password'],
-        $config['db_name'],
-        (int) $config['db_port']
-    );
+    try {
+        $db = new mysqli(
+            $config['db_host'],
+            $config['db_user'],
+            $config['db_password'],
+            $config['db_name'],
+            (int) $config['db_port']
+        );
+    } catch (Throwable $error) {
+        error_log('Database connection failed: ' . $error->getMessage());
+        respond(['success' => false, 'message' => 'Database connection failed. Check backend/config.php.'], 500);
+    }
 
     if ($db->connect_errno) {
-        respond(['success' => false, 'message' => 'Database connection failed.'], 500);
+        error_log('Database connection failed: ' . $db->connect_error);
+        respond(['success' => false, 'message' => 'Database connection failed. Check backend/config.php.'], 500);
     }
 
     $db->set_charset('utf8mb4');
@@ -62,7 +73,7 @@ function getDb(array $config): mysqli
 function requestBody(): array
 {
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-    if (str_contains($contentType, 'application/json')) {
+    if (strpos($contentType, 'application/json') !== false) {
         $decoded = json_decode(file_get_contents('php://input'), true);
         return is_array($decoded) ? $decoded : [];
     }
@@ -174,7 +185,7 @@ function fetchPlant(mysqli $db, int $plantId): ?array
 function fetchTicket(mysqli $db, int $ticketId): ?array
 {
     $stmt = $db->prepare(
-        "SELECT t.*,c.company_name,c.company_code,p.plant_name,p.plant_code,
+        "SELECT t.*,c.company_name,c.company_code,p.plant_name,p.plant_code,p.ticket_prefix,
                 p.capacity_mw,p.scada_site_id,
                 r.name AS raised_by_name,r.email AS raised_by_email,
                 a.name AS assigned_to_name
@@ -267,6 +278,151 @@ function notifySupport(
     while ($row = $result->fetch_assoc()) {
         notifyUser($db, (int) $row['id'], $ticketId, $title, $message, $type);
     }
+}
+
+function cleanTicketPrefix(string $value): string
+{
+    $clean = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $value));
+    return substr($clean, 0, 12);
+}
+
+function ticketPrefixFromPlant(array $plant): string
+{
+    $configured = cleanTicketPrefix((string) ($plant['ticket_prefix'] ?? ''));
+    if ($configured !== '') {
+        return $configured;
+    }
+
+    $plantCodeParts = explode('-', (string) ($plant['plant_code'] ?? ''));
+    if (count($plantCodeParts) >= 2) {
+        $fromCode = cleanTicketPrefix($plantCodeParts[1]);
+        if ($fromCode !== '') {
+            return $fromCode;
+        }
+    }
+
+    $words = preg_split('/\s+/', (string) ($plant['plant_name'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+    $initials = '';
+    foreach ($words ?: [] as $word) {
+        $initials .= substr(cleanTicketPrefix($word), 0, 1);
+    }
+
+    return $initials !== '' ? substr($initials, 0, 6) : 'PLANT';
+}
+
+function nextTicketSequence(mysqli $db, int $plantId): int
+{
+    $stmt = $db->prepare(
+        "INSERT IGNORE INTO ticket_counters (plant_id,next_sequence)
+         VALUES (?,1)"
+    );
+    $stmt->bind_param('i', $plantId);
+    $stmt->execute();
+
+    $stmt = $db->prepare(
+        "SELECT next_sequence FROM ticket_counters
+         WHERE plant_id=?
+         FOR UPDATE"
+    );
+    $stmt->bind_param('i', $plantId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+
+    $sequence = max(1, (int) ($row['next_sequence'] ?? 1));
+
+    $stmt = $db->prepare(
+        "UPDATE ticket_counters
+         SET next_sequence=?
+         WHERE plant_id=?"
+    );
+    $nextSequence = $sequence + 1;
+    $stmt->bind_param('ii', $nextSequence, $plantId);
+    $stmt->execute();
+
+    return $sequence;
+}
+
+function buildTicketNumber(array $plant, int $sequence): string
+{
+    return sprintf(
+        'NT-%s-%s',
+        ticketPrefixFromPlant($plant),
+        str_pad((string) $sequence, 2, '0', STR_PAD_LEFT)
+    );
+}
+
+function friendlyLabel(string $value): string
+{
+    return ucwords(str_replace('_', ' ', $value));
+}
+
+function capacityLabel(array $plant): string
+{
+    return $plant['capacity_mw'] === null
+        ? 'Not set'
+        : number_format((float) $plant['capacity_mw'], 2) . ' MW';
+}
+
+function ticketAgeLabel(?string $start, ?string $end = null): string
+{
+    if ($start === null || $start === '') {
+        return 'Not available';
+    }
+
+    try {
+        $startedAt = new DateTimeImmutable($start);
+        $endedAt = $end ? new DateTimeImmutable($end) : new DateTimeImmutable();
+        $diff = $startedAt->diff($endedAt);
+    } catch (Throwable $error) {
+        return 'Not available';
+    }
+
+    $parts = [];
+    if ($diff->days > 0) {
+        $parts[] = $diff->days . ' day' . ($diff->days === 1 ? '' : 's');
+    }
+    if ($diff->h > 0) {
+        $parts[] = $diff->h . ' hour' . ($diff->h === 1 ? '' : 's');
+    }
+    if (!$parts && $diff->i > 0) {
+        $parts[] = $diff->i . ' minute' . ($diff->i === 1 ? '' : 's');
+    }
+
+    return $parts ? implode(' ', $parts) : 'Less than a minute';
+}
+
+function emailReportTable(array $rows): string
+{
+    $html = '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:18px 0;border:1px solid #d8e6fa">';
+    foreach ($rows as $label => $value) {
+        $display = trim((string) $value);
+        if ($display === '') {
+            $display = 'Not set';
+        }
+
+        $html .= '<tr>'
+            . '<td style="width:34%;padding:10px 12px;border-bottom:1px solid #e8f0fb;background:#f7fbff;color:#5b6b82;font-size:13px"><strong>'
+            . htmlspecialchars((string) $label)
+            . '</strong></td>'
+            . '<td style="padding:10px 12px;border-bottom:1px solid #e8f0fb;color:#172033;font-size:14px">'
+            . htmlspecialchars($display)
+            . '</td>'
+            . '</tr>';
+    }
+
+    return $html . '</table>';
+}
+
+function emailNoteBox(string $title, string $text): string
+{
+    if (trim($text) === '') {
+        return '';
+    }
+
+    return '<p style="margin:18px 0 8px"><strong>' . htmlspecialchars($title) . '</strong></p>'
+        . '<div style="padding:14px;background:#f7fbff;border:1px solid #d8e6fa;border-radius:10px;white-space:normal">'
+        . nl2br(htmlspecialchars($text))
+        . '</div>';
 }
 
 function uploadTicketImages(
@@ -362,13 +518,16 @@ function uploadTicketImages(
     return $saved;
 }
 
-$db = getDb($config);
-$action = $_GET['action'] ?? '';
-
 try {
+    $db = getDb($config);
+
     switch ($action) {
-        case 'health':
-            respond(['success' => true, 'message' => 'NUCLEI TECH API is running.']);
+        case 'db_health':
+            respond([
+                'success' => true,
+                'message' => 'NUCLEI TECH API and database are connected.',
+                'database' => $config['db_name'],
+            ]);
 
         case 'login':
             $input = requestBody();
@@ -419,7 +578,7 @@ try {
         case 'plants':
             $user = authenticatedUser($db);
             $baseSql =
-                "SELECT p.id,p.company_id,p.plant_code,p.plant_name,p.capacity_mw,
+                "SELECT p.id,p.company_id,p.plant_code,p.ticket_prefix,p.plant_name,p.capacity_mw,
                         p.scada_site_id,p.websocket_url,p.scada_enabled,
                         c.company_name,c.company_code,
                         COUNT(t.id) AS total_tickets,
@@ -577,7 +736,7 @@ try {
             }
 
             $sql =
-                "SELECT t.id,t.ticket_number,t.subject,t.category,t.priority,t.status,
+                "SELECT t.id,t.ticket_number,t.ticket_sequence,t.subject,t.category,t.priority,t.status,
                         t.created_at,t.updated_at,p.plant_name,p.capacity_mw,p.scada_site_id,
                         c.company_name,r.name AS raised_by_name,a.name AS assigned_to_name,
                         (SELECT COUNT(*) FROM ticket_attachments x WHERE x.ticket_id=t.id) AS attachment_count
@@ -601,6 +760,7 @@ try {
 
             foreach ($tickets as &$ticket) {
                 $ticket['id'] = (int) $ticket['id'];
+                $ticket['ticket_sequence'] = (int) $ticket['ticket_sequence'];
                 $ticket['attachment_count'] = (int) $ticket['attachment_count'];
                 $ticket['capacity_mw'] = $ticket['capacity_mw'] === null ? null : (float) $ticket['capacity_mw'];
             }
@@ -635,7 +795,6 @@ try {
                 respond(['success' => false, 'message' => 'Plant not found.'], 404);
             }
 
-            $placeholder = 'PENDING-' . bin2hex(random_bytes(10));
             $companyId = (int) $plant['company_id'];
             $raisedBy = (int) $user['id'];
 
@@ -649,15 +808,19 @@ try {
 
             $db->begin_transaction();
             try {
+                $ticketSequence = nextTicketSequence($db, $plantId);
+                $ticketNumber = buildTicketNumber($plant, $ticketSequence);
+
                 $stmt = $db->prepare(
                     "INSERT INTO tickets
-                        (ticket_number,company_id,plant_id,raised_by,assigned_to,
+                        (ticket_number,ticket_sequence,company_id,plant_id,raised_by,assigned_to,
                          category,subject,description,priority,status)
-                     VALUES (?,?,?,?,?,?,?,?,?,'open')"
+                     VALUES (?,?,?,?,?,?,?,?,?,?,'open')"
                 );
                 $stmt->bind_param(
-                    'siiiissss',
-                    $placeholder,
+                    'siiiiissss',
+                    $ticketNumber,
+                    $ticketSequence,
                     $companyId,
                     $plantId,
                     $raisedBy,
@@ -669,18 +832,6 @@ try {
                 );
                 $stmt->execute();
                 $ticketId = (int) $stmt->insert_id;
-
-                $ticketNumber = sprintf(
-                    'NT-%s-%s-%s-%06d',
-                    strtoupper($plant['company_code']),
-                    strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $plant['plant_code']), 0, 12)),
-                    date('Ymd'),
-                    $ticketId
-                );
-
-                $stmt = $db->prepare("UPDATE tickets SET ticket_number=? WHERE id=?");
-                $stmt->bind_param('si', $ticketNumber, $ticketId);
-                $stmt->execute();
 
                 addHistory($db, $ticketId, $raisedBy, 'ticket_created', null, 'open', 'Ticket raised by customer.');
                 if ($ownerId !== null) {
@@ -718,34 +869,39 @@ try {
                 throw $error;
             }
 
-            $capacityLabel = $plant['capacity_mw'] === null ? '' : number_format((float) $plant['capacity_mw'], 2) . ' MW';
+            $attachmentCount = count($attachments);
+            $ticketReport = emailReportTable([
+                'Ticket Number' => $ticketNumber,
+                'Plant Short ID' => ticketPrefixFromPlant($plant),
+                'Company' => $plant['company_name'],
+                'Plant' => $plant['plant_name'],
+                'Capacity' => capacityLabel($plant),
+                'SCADA ID' => $plant['scada_site_id'],
+                'Category' => $category,
+                'Priority' => friendlyLabel($priority),
+                'Status' => 'Open',
+                'Raised By' => $user['name'] . ' <' . $user['email'] . '>',
+                'Images Attached' => (string) $attachmentCount,
+                'Created At' => date('Y-m-d H:i:s'),
+            ]);
+
             $customerBody = emailLayout(
                 'Ticket received',
                 '<p>Hello <strong>' . htmlspecialchars($user['name']) . '</strong>,</p>'
-                . '<p>Your plant issue has been received by NUCLEI TECH.</p>'
-                . '<table cellpadding="7" style="border-collapse:collapse">'
-                . '<tr><td><strong>Ticket</strong></td><td>' . htmlspecialchars($ticketNumber) . '</td></tr>'
-                . '<tr><td><strong>Plant</strong></td><td>' . htmlspecialchars($plant['plant_name']) . '</td></tr>'
-                . '<tr><td><strong>Capacity</strong></td><td>' . htmlspecialchars($capacityLabel) . '</td></tr>'
-                . '<tr><td><strong>SCADA ID</strong></td><td>' . htmlspecialchars($plant['scada_site_id']) . '</td></tr>'
-                . '<tr><td><strong>Issue</strong></td><td>' . htmlspecialchars($subject) . '</td></tr>'
-                . '<tr><td><strong>Status</strong></td><td>Open</td></tr>'
-                . '</table><p>You will receive another update when NUCLEI TECH changes the ticket status.</p>'
+                . '<p>Your plant issue has been received and assigned to NUCLEI TECH support.</p>'
+                . $ticketReport
+                . emailNoteBox('Issue Summary', $subject)
+                . emailNoteBox('Issue Description', $description)
+                . '<p>The ticket status will update automatically in the NUCLEI TECH app as support works on it.</p>'
             );
             sendAppEmail($config, $user['email'], "Ticket received - {$ticketNumber}", $customerBody);
 
             $ownerBody = emailLayout(
-                'New plant ticket',
-                '<p>A new issue requires your attention.</p>'
-                . '<table cellpadding="7" style="border-collapse:collapse">'
-                . '<tr><td><strong>Ticket</strong></td><td>' . htmlspecialchars($ticketNumber) . '</td></tr>'
-                . '<tr><td><strong>Company</strong></td><td>' . htmlspecialchars($plant['company_name']) . '</td></tr>'
-                . '<tr><td><strong>Plant</strong></td><td>' . htmlspecialchars($plant['plant_name']) . '</td></tr>'
-                . '<tr><td><strong>SCADA ID</strong></td><td>' . htmlspecialchars($plant['scada_site_id']) . '</td></tr>'
-                . '<tr><td><strong>Raised by</strong></td><td>' . htmlspecialchars($user['name']) . '</td></tr>'
-                . '<tr><td><strong>Issue</strong></td><td>' . htmlspecialchars($subject) . '</td></tr>'
-                . '<tr><td><strong>Priority</strong></td><td>' . htmlspecialchars(ucfirst($priority)) . '</td></tr>'
-                . '</table>'
+                'New plant ticket report',
+                '<p>A new production ticket has been registered and routed to the owner queue.</p>'
+                . $ticketReport
+                . emailNoteBox('Issue Summary', $subject)
+                . emailNoteBox('Issue Description', $description)
             );
             sendAppEmail($config, (string) $config['owner_email'], "New ticket - {$ticketNumber}", $ownerBody);
 
@@ -755,6 +911,7 @@ try {
                 'ticket' => [
                     'id' => $ticketId,
                     'ticket_number' => $ticketNumber,
+                    'ticket_sequence' => $ticketSequence,
                     'status' => 'open',
                     'priority' => $priority,
                     'attachments' => $attachments,
@@ -909,8 +1066,19 @@ try {
                 respond(['success' => false, 'message' => 'Ticket not found.'], 404);
             }
 
-            $resolvedAt = $status === 'resolved' ? date('Y-m-d H:i:s') : $ticket['resolved_at'];
-            $closedAt = $status === 'closed' ? date('Y-m-d H:i:s') : $ticket['closed_at'];
+            $now = date('Y-m-d H:i:s');
+            $resolvedAt = $ticket['resolved_at'];
+            $closedAt = $ticket['closed_at'];
+            if ($status === 'resolved' && $resolvedAt === null) {
+                $resolvedAt = $now;
+            }
+            if ($status === 'closed') {
+                $resolvedAt = $resolvedAt ?? $now;
+                $closedAt = $now;
+            }
+            if ($status === 'reopened') {
+                $closedAt = null;
+            }
             $finalNotes = $resolutionNotes !== '' ? $resolutionNotes : $ticket['resolution_notes'];
 
             $stmt = $db->prepare(
@@ -931,7 +1099,7 @@ try {
                 $resolutionNotes !== '' ? $resolutionNotes : null
             );
 
-            $friendlyStatus = ucwords(str_replace('_', ' ', $status));
+            $friendlyStatus = friendlyLabel($status);
             notifyUser(
                 $db,
                 $ticket['raised_by'],
@@ -940,15 +1108,35 @@ try {
                 "{$ticket['ticket_number']} is now {$friendlyStatus}.",
                 'status_changed'
             );
+            notifySupport(
+                $db,
+                $ticketId,
+                "Ticket {$friendlyStatus}",
+                "{$ticket['ticket_number']} was changed to {$friendlyStatus} by {$user['name']}.",
+                'status_changed'
+            );
+
+            $ticketReport = emailReportTable([
+                'Ticket Number' => $ticket['ticket_number'],
+                'Company' => $ticket['company_name'],
+                'Plant' => $ticket['plant_name'],
+                'Plant Short ID' => ticketPrefixFromPlant($ticket),
+                'SCADA ID' => $ticket['scada_site_id'],
+                'Previous Status' => friendlyLabel($ticket['status']),
+                'Current Status' => $friendlyStatus,
+                'Updated By' => $user['name'],
+                'Raised By' => $ticket['raised_by_name'] . ' <' . $ticket['raised_by_email'] . '>',
+                'Created At' => $ticket['created_at'],
+                'Updated At' => $now,
+                'Age' => ticketAgeLabel($ticket['created_at'], $status === 'resolved' || $status === 'closed' ? $now : null),
+            ]);
 
             $body = emailLayout(
                 "Ticket {$friendlyStatus}",
                 '<p>Hello <strong>' . htmlspecialchars($ticket['raised_by_name']) . '</strong>,</p>'
-                . '<p>Your ticket <strong>' . htmlspecialchars($ticket['ticket_number']) . '</strong> is now <strong>' . htmlspecialchars($friendlyStatus) . '</strong>.</p>'
-                . '<p><strong>Plant:</strong> ' . htmlspecialchars($ticket['plant_name']) . '</p>'
-                . ($resolutionNotes !== ''
-                    ? '<p><strong>NUCLEI TECH update:</strong></p><p style="padding:14px;background:#f2f7f8;border-radius:10px">' . nl2br(htmlspecialchars($resolutionNotes)) . '</p>'
-                    : '')
+                . '<p>Your ticket is now <strong>' . htmlspecialchars($friendlyStatus) . '</strong>.</p>'
+                . $ticketReport
+                . emailNoteBox('NUCLEI TECH Update', $resolutionNotes)
                 . '<p>Open the NUCLEI TECH app to view the complete history and reply.</p>'
             );
             sendAppEmail(
@@ -956,6 +1144,19 @@ try {
                 $ticket['raised_by_email'],
                 "Ticket {$friendlyStatus} - {$ticket['ticket_number']}",
                 $body
+            );
+
+            $ownerBody = emailLayout(
+                "Ticket {$friendlyStatus} report",
+                '<p>The ticket status was updated in the live database and is visible in the app.</p>'
+                . $ticketReport
+                . emailNoteBox('Resolution / Update Notes', $resolutionNotes)
+            );
+            sendAppEmail(
+                $config,
+                (string) $config['owner_email'],
+                "Ticket {$friendlyStatus} report - {$ticket['ticket_number']}",
+                $ownerBody
             );
 
             respond(['success' => true, 'message' => "Ticket changed to {$friendlyStatus}."]);

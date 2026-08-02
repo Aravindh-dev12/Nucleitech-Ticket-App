@@ -1,6 +1,8 @@
 -- NUCLEI TECH SCADA ID correction, version 2.1.0
 -- Run this only on an existing database created from an earlier package.
 
+USE nuclei_tech_ticket;
+
 START TRANSACTION;
 
 UPDATE plants p

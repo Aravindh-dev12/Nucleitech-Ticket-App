@@ -138,15 +138,15 @@ class _BrandPanel extends StatelessWidget {
       height: double.infinity,
       padding: const EdgeInsets.all(54),
       color: const Color(0xFF0B5ED7),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const _BrandMark(size: 78),
-          const SizedBox(height: 28),
+          _BrandMark(size: 78),
+          SizedBox(height: 28),
           Text(
             AppConfig.appName,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 38,
               height: 1.1,
@@ -154,8 +154,8 @@ class _BrandPanel extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 14),
-          const Text(
+          SizedBox(height: 14),
+          Text(
             'Live SCADA monitoring and plant support tickets in one secure application.',
             style: TextStyle(
               color: Color(0xFFDCEAFF),
@@ -163,18 +163,18 @@ class _BrandPanel extends StatelessWidget {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 38),
-          const _FeatureLine(
+          SizedBox(height: 38),
+          _FeatureLine(
             icon: Icons.monitor_heart_outlined,
             text: 'Live plant, inverter and VCB overview',
           ),
-          const SizedBox(height: 16),
-          const _FeatureLine(
+          SizedBox(height: 16),
+          _FeatureLine(
             icon: Icons.confirmation_number_outlined,
             text: 'Raise issues with images and track resolution',
           ),
-          const SizedBox(height: 16),
-          const _FeatureLine(
+          SizedBox(height: 16),
+          _FeatureLine(
             icon: Icons.notifications_active_outlined,
             text: 'Automatic owner and customer notifications',
           ),
@@ -256,7 +256,7 @@ class _FeatureLine extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.14),
+            color: Colors.white.withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: Colors.white, size: 21),

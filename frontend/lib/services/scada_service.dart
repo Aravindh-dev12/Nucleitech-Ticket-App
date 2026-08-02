@@ -88,8 +88,7 @@ class ScadaService extends ChangeNotifier {
 
   Future<void> _connect() async {
     if (_disposed) return;
-    final config = _config ??
-        await ApiService.instance.getScadaConfig(plantId);
+    final config = _config ?? await ApiService.instance.getScadaConfig(plantId);
     _config = config;
 
     await _closeSocket();
@@ -177,8 +176,7 @@ class ScadaService extends ChangeNotifier {
   ) async {
     final now = DateTime.now();
     if (_lastSnapshotSave != null &&
-        now.difference(_lastSnapshotSave!) <
-            const Duration(seconds: 30)) {
+        now.difference(_lastSnapshotSave!) < const Duration(seconds: 30)) {
       return;
     }
     _lastSnapshotSave = now;
@@ -267,8 +265,7 @@ class ScadaNormalizer {
 
     if (messageSite != null &&
         expectedSiteId.isNotEmpty &&
-        messageSite.toString().toLowerCase() !=
-            expectedSiteId.toLowerCase()) {
+        messageSite.toString().toLowerCase() != expectedSiteId.toLowerCase()) {
       return null;
     }
 
@@ -570,8 +567,7 @@ class ScadaNormalizer {
         'devicename',
         'id',
       ]);
-      final matchesParent =
-          keyWords.any((word) => lowerParent.contains(word));
+      final matchesParent = keyWords.any((word) => lowerParent.contains(word));
       final matchesType = type != null &&
           typeWords.any((word) => type.toLowerCase().contains(word));
       final matchesName = name != null &&
@@ -586,8 +582,7 @@ class ScadaNormalizer {
         final childKey = entry.key.toLowerCase();
         final child = entry.value;
 
-        if (child is Map &&
-            keyWords.any((word) => childKey.contains(word))) {
+        if (child is Map && keyWords.any((word) => childKey.contains(word))) {
           for (final nested in child.entries) {
             if (nested.value is Map) {
               final deviceMap = Map<String, dynamic>.from(
@@ -628,8 +623,7 @@ class ScadaNormalizer {
   ) {
     for (final alias in aliases) {
       for (final entry in map.entries) {
-        if (entry.key.toLowerCase() == alias &&
-            _isScalar(entry.value)) {
+        if (entry.key.toLowerCase() == alias && _isScalar(entry.value)) {
           return entry.value.toString();
         }
       }
@@ -652,10 +646,7 @@ class ScadaNormalizer {
   }
 
   static bool _isScalar(dynamic value) {
-    return value == null ||
-        value is String ||
-        value is num ||
-        value is bool;
+    return value == null || value is String || value is num || value is bool;
   }
 
   static String _formatValue(dynamic value) {

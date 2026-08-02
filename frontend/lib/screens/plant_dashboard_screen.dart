@@ -20,8 +20,7 @@ class PlantDashboardScreen extends StatefulWidget {
   final Plant plant;
 
   @override
-  State<PlantDashboardScreen> createState() =>
-      _PlantDashboardScreenState();
+  State<PlantDashboardScreen> createState() => _PlantDashboardScreenState();
 }
 
 class _PlantDashboardScreenState extends State<PlantDashboardScreen>
@@ -89,7 +88,9 @@ class _PlantDashboardScreenState extends State<PlantDashboardScreen>
             Tab(icon: Icon(Icons.dashboard_outlined), text: 'Overview'),
             Tab(icon: Icon(Icons.electrical_services), text: 'Inverters'),
             Tab(icon: Icon(Icons.power_settings_new), text: 'VCB'),
-            Tab(icon: Icon(Icons.confirmation_number_outlined), text: 'Tickets'),
+            Tab(
+                icon: Icon(Icons.confirmation_number_outlined),
+                text: 'Tickets'),
           ],
         ),
       ),
@@ -288,8 +289,7 @@ class _OverviewTab extends StatelessWidget {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: data.overview.length,
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: columns,
                           mainAxisExtent: 135,
                           crossAxisSpacing: 12,
@@ -622,8 +622,7 @@ class _TicketsTab extends StatelessWidget {
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) =>
-                            TicketDetailScreen(ticketId: ticket.id),
+                        builder: (_) => TicketDetailScreen(ticketId: ticket.id),
                       ),
                     );
                     onRefresh();

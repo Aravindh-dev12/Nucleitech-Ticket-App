@@ -68,7 +68,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
             child: DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               decoration: const InputDecoration(
                 labelText: 'Filter by status',
                 prefixIcon: Icon(Icons.filter_list),

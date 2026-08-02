@@ -60,11 +60,17 @@ function sendAppEmail(array $config, string $to, string $subject, string $html):
 
 function emailLayout(string $title, string $body): string
 {
-    return '<!doctype html><html><body style="margin:0;background:#f4f8ff;font-family:Arial,sans-serif;color:#172033">'
-        . '<div style="max-width:640px;margin:30px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #d8e6fa">'
-        . '<div style="background:#0b5ed7;color:#fff;padding:24px"><div style="font-size:13px;letter-spacing:1.8px">NUCLEI TECH</div>'
-        . '<h1 style="margin:8px 0 0;font-size:24px">' . htmlspecialchars($title) . '</h1></div>'
-        . '<div style="padding:26px;line-height:1.6">' . $body . '</div>'
-        . '<div style="padding:18px 26px;background:#f4f8ff;color:#5b6b82;font-size:12px">Automated plant support notification from NUCLEI TECH.</div>'
+    return '<!doctype html><html><body style="margin:0;background:#eef4fb;font-family:Arial,Helvetica,sans-serif;color:#172033">'
+        . '<div style="display:none;max-height:0;overflow:hidden">NUCLEI TECH plant ticket update</div>'
+        . '<div style="max-width:720px;margin:28px auto;background:#ffffff;border:1px solid #d8e6fa">'
+        . '<div style="background:#0b5ed7;color:#ffffff;padding:24px 28px">'
+        . '<div style="font-size:12px;letter-spacing:2px;font-weight:700">NUCLEI TECH</div>'
+        . '<h1 style="margin:8px 0 0;font-size:24px;line-height:1.25">' . htmlspecialchars($title) . '</h1>'
+        . '<p style="margin:8px 0 0;color:#dceaff;font-size:13px">SCADA Monitoring and Plant Support Desk</p>'
+        . '</div>'
+        . '<div style="padding:28px;line-height:1.6;font-size:14px">' . $body . '</div>'
+        . '<div style="padding:18px 28px;background:#f7fbff;color:#5b6b82;font-size:12px;border-top:1px solid #d8e6fa">'
+        . 'This is an automated ticket report from NUCLEI TECH. Please use the app for complete history, images and replies.'
+        . '</div>'
         . '</div></body></html>';
 }

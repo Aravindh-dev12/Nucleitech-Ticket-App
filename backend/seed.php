@@ -50,21 +50,22 @@ try {
 
     // Display capacity and SCADA site ID are intentionally separate.
     $plantsToSeed = [
-        ['VJ', 'VJ-SRN-1MW', 'SRI Ram Nallamani Blue Metals', 1.00, 'via-4mw'],
-        ['VJ', 'VJ-VCP-7MW', 'Vijayanth Cosmic Powers Pvt Ltd', 7.00, 'via7mw'],
-        ['VJ', 'VJ-KPF-3MW', 'Krishna Poultry Farm', 3.00, 'via3mw'],
-        ['VJ', 'VJ-BTJ-4MW', 'Bojaraj Textiles Pvt Ltd', 4.00, 'via-1mw'],
-        ['VS', 'VS-ANUSHYAM', 'Anushyam Solar Pvt Ltd', null, 'anushyam'],
-        ['VS', 'VS-MAKKAL', 'MakkalPower Pvt Ltd', null, 'Makkalpower'],
-        ['VS', 'VS-VELLIYANAI', 'Vinoba Solar Pvt Ltd', null, 'vinoba-velliyanai'],
+        ['VJ', 'VJ-SRN-1MW', 'SRN', 'SRI Ram Nallamani Blue Metals', 1.00, 'via-4mw'],
+        ['VJ', 'VJ-VCP-7MW', 'VCP', 'Vijayanth Cosmic Powers Pvt Ltd', 7.00, 'via7mw'],
+        ['VJ', 'VJ-KPF-3MW', 'KPF', 'Krishna Poultry Farm', 3.00, 'via3mw'],
+        ['VJ', 'VJ-BTJ-4MW', 'BTJ', 'Bojaraj Textiles Pvt Ltd', 4.00, 'via-1mw'],
+        ['VS', 'VS-ANUSHYAM', 'ANU', 'Anushyam Solar Pvt Ltd', null, 'anushyam'],
+        ['VS', 'VS-MAKKAL', 'MAK', 'MakkalPower Pvt Ltd', null, 'Makkalpower'],
+        ['VS', 'VS-VELLIYANAI', 'VSP', 'Vinoba Solar Pvt Ltd', null, 'vinoba-velliyanai'],
     ];
 
     $plantStmt = $db->prepare(
         "INSERT INTO plants
-            (company_id, plant_code, plant_name, capacity_mw, scada_site_id,
+            (company_id, plant_code, ticket_prefix, plant_name, capacity_mw, scada_site_id,
              websocket_url, subscription_payload, scada_enabled, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
          ON DUPLICATE KEY UPDATE
+            ticket_prefix = VALUES(ticket_prefix),
             plant_name = VALUES(plant_name),
             capacity_mw = VALUES(capacity_mw),
             scada_site_id = VALUES(scada_site_id),
@@ -74,12 +75,13 @@ try {
             is_active = 1"
     );
 
-    foreach ($plantsToSeed as [$companyCode, $plantCode, $plantName, $capacity, $siteId]) {
+    foreach ($plantsToSeed as [$companyCode, $plantCode, $ticketPrefix, $plantName, $capacity, $siteId]) {
         $companyId = $companies[$companyCode];
         $plantStmt->bind_param(
-            'issdsss',
+            'isssdsss',
             $companyId,
             $plantCode,
+            $ticketPrefix,
             $plantName,
             $capacity,
             $siteId,
@@ -88,6 +90,12 @@ try {
         );
         $plantStmt->execute();
     }
+
+    $db->query(
+        "INSERT INTO ticket_counters (plant_id, next_sequence)
+         SELECT id, 1 FROM plants
+         ON DUPLICATE KEY UPDATE next_sequence = GREATEST(next_sequence, VALUES(next_sequence))"
+    );
 
     $userStmt = $db->prepare(
         "INSERT INTO users

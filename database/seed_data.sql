@@ -17,24 +17,25 @@ SET @ws_url = 'wss://vinobasolar.scadahub.in:5001';
 SET @subscription = JSON_OBJECT('action', 'subscribe', 'siteId', '{{site_id}}');
 
 INSERT INTO plants
-  (company_id, plant_code, plant_name, capacity_mw, scada_site_id,
+  (company_id, plant_code, ticket_prefix, plant_name, capacity_mw, scada_site_id,
    websocket_url, subscription_payload, scada_enabled, is_active)
 VALUES
-  (@vj_company_id, 'VJ-SRN-1MW', 'SRI Ram Nallamani Blue Metals', 1.00,
+  (@vj_company_id, 'VJ-SRN-1MW', 'SRN', 'SRI Ram Nallamani Blue Metals', 1.00,
    'via-4mw', @ws_url, @subscription, 1, 1),
-  (@vj_company_id, 'VJ-VCP-7MW', 'Vijayanth Cosmic Powers Pvt Ltd', 7.00,
+  (@vj_company_id, 'VJ-VCP-7MW', 'VCP', 'Vijayanth Cosmic Powers Pvt Ltd', 7.00,
    'via7mw', @ws_url, @subscription, 1, 1),
-  (@vj_company_id, 'VJ-KPF-3MW', 'Krishna Poultry Farm', 3.00,
+  (@vj_company_id, 'VJ-KPF-3MW', 'KPF', 'Krishna Poultry Farm', 3.00,
    'via3mw', @ws_url, @subscription, 1, 1),
-  (@vj_company_id, 'VJ-BTJ-4MW', 'Bojaraj Textiles Pvt Ltd', 4.00,
+  (@vj_company_id, 'VJ-BTJ-4MW', 'BTJ', 'Bojaraj Textiles Pvt Ltd', 4.00,
    'via-1mw', @ws_url, @subscription, 1, 1),
-  (@vs_company_id, 'VS-ANUSHYAM', 'Anushyam Solar Pvt Ltd', NULL,
+  (@vs_company_id, 'VS-ANUSHYAM', 'ANU', 'Anushyam Solar Pvt Ltd', NULL,
    'anushyam', @ws_url, @subscription, 1, 1),
-  (@vs_company_id, 'VS-MAKKAL', 'MakkalPower Pvt Ltd', NULL,
+  (@vs_company_id, 'VS-MAKKAL', 'MAK', 'MakkalPower Pvt Ltd', NULL,
    'Makkalpower', @ws_url, @subscription, 1, 1),
-  (@vs_company_id, 'VS-VELLIYANAI', 'Vinoba Solar Pvt Ltd', NULL,
+  (@vs_company_id, 'VS-VELLIYANAI', 'VSP', 'Vinoba Solar Pvt Ltd', NULL,
    'vinoba-velliyanai', @ws_url, @subscription, 1, 1)
 ON DUPLICATE KEY UPDATE
+  ticket_prefix = VALUES(ticket_prefix),
   plant_name = VALUES(plant_name),
   capacity_mw = VALUES(capacity_mw),
   scada_site_id = VALUES(scada_site_id),
@@ -59,5 +60,10 @@ ON DUPLICATE KEY UPDATE
   password_hash = VALUES(password_hash),
   role = VALUES(role),
   is_active = 1;
+
+INSERT INTO ticket_counters (plant_id, next_sequence)
+SELECT id, 1 FROM plants
+ON DUPLICATE KEY UPDATE
+  next_sequence = GREATEST(next_sequence, VALUES(next_sequence));
 
 COMMIT;

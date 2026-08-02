@@ -35,10 +35,8 @@ class EmptyView extends StatelessWidget {
             Icon(
               icon,
               size: 54,
-              color: Theme.of(context)
-                  .colorScheme
-                  .primary
-                  .withOpacity(0.55),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.55),
             ),
             const SizedBox(height: 16),
             Text(
@@ -128,9 +126,9 @@ class StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(
         prettyLabel(value),
@@ -189,9 +187,7 @@ class TicketCard extends StatelessWidget {
           backgroundColor: const Color(0xFFE7F0FF),
           foregroundColor: const Color(0xFF0B5ED7),
           child: Text(
-            ticket.priority.isEmpty
-                ? 'T'
-                : ticket.priority[0].toUpperCase(),
+            ticket.priority.isEmpty ? 'T' : ticket.priority[0].toUpperCase(),
           ),
         ),
         title: Text(

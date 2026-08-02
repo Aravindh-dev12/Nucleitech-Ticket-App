@@ -28,22 +28,25 @@ Change the owner password immediately after the first production deployment. The
 
 ### Vijayanth
 
-| Display plant | Display capacity | SCADA subscription ID |
-|---|---:|---|
-| SRI Ram Nallamani Blue Metals | 1 MW | `via-4mw` |
-| Vijayanth Cosmic Powers Pvt Ltd | 7 MW | `via7mw` |
-| Krishna Poultry Farm | 3 MW | `via3mw` |
-| Bojaraj Textiles Pvt Ltd | 4 MW | `via-1mw` |
+| Display plant | Ticket short ID | Display capacity | SCADA subscription ID |
+|---|---|---:|---|
+| SRI Ram Nallamani Blue Metals | `SRN` | 1 MW | `via-4mw` |
+| Vijayanth Cosmic Powers Pvt Ltd | `VCP` | 7 MW | `via7mw` |
+| Krishna Poultry Farm | `KPF` | 3 MW | `via3mw` |
+| Bojaraj Textiles Pvt Ltd | `BTJ` | 4 MW | `via-1mw` |
 
 The four values above are stored and transmitted exactly without spaces. The typed `via 3mw` value is implemented as `via3mw`.
 
 ### Vinoba Solar
 
-| Display plant | SCADA subscription ID |
-|---|---|
-| Anushyam Solar Pvt Ltd | `anushyam` |
-| MakkalPower Pvt Ltd | `Makkalpower` |
-| Vinoba Solar Pvt Ltd | `vinoba-velliyanai` |
+| Display plant | Ticket short ID | SCADA subscription ID |
+|---|---|---|
+| Anushyam Solar Pvt Ltd | `ANU` | `anushyam` |
+| MakkalPower Pvt Ltd | `MAK` | `Makkalpower` |
+| Vinoba Solar Pvt Ltd | `VSP` | `vinoba-velliyanai` |
+
+Ticket numbers are generated per plant with the short ID and a local sequence,
+for example `NT-SRN-01`, `NT-SRN-02`, then `NT-VCP-01` for a different plant.
 
 All seven plants are configured with:
 
@@ -110,25 +113,13 @@ database/scada_sample_payload.json
 
 ## 1. MySQL setup
 
-```sql
-CREATE DATABASE nuclei_tech
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
-```
-
-Import the schema:
+`database/schema.sql` is the complete one-file database install. It creates
+the `nuclei_tech_ticket` database, selects it, creates all tables, and inserts the
+starter companies, plants, SCADA IDs and login accounts.
 
 ```bash
-mysql -u root -p nuclei_tech < database/schema.sql
+mysql -u root -p < database/schema.sql
 ```
-
-Optional SQL-only starter data import:
-
-```bash
-mysql -u root -p nuclei_tech < database/seed_data.sql
-```
-
-Use either `database/seed_data.sql` or `php backend/seed.php`; both create the same companies, plants, SCADA IDs and starter accounts.
 
 ## 2. Backend setup
 
@@ -138,18 +129,18 @@ cp config.example.php config.php
 composer install
 ```
 
-Edit `config.php` with the database credentials and public backend URL.
+Edit `config.php` with the database credentials, public backend URL and SMTP settings.
 
-Seed the companies, plants, SCADA IDs and users:
+For an existing live database, run the ticket-numbering upgrade once in phpMyAdmin or MySQL:
 
 ```bash
-php seed.php
+mysql -u root -p nuclei_tech_ticket < database/migrate_ticket_numbering_v3.sql
 ```
 
-For a database already created from the previous ZIP, correct only the Vijayanth SCADA IDs with:
+If the database was created from an earlier package, you can also correct only the Vijayanth SCADA IDs with:
 
 ```bash
-mysql -u root -p nuclei_tech < database/update_scada_ids_v2.sql
+mysql -u root -p nuclei_tech_ticket < database/update_scada_ids_v2.sql
 ```
 
 Start a development server:

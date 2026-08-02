@@ -154,8 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: plants.length,
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
                         mainAxisExtent: 255,
                         crossAxisSpacing: 16,
@@ -212,7 +211,7 @@ class _WelcomeCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 31,
-            backgroundColor: Colors.white.withOpacity(0.18),
+            backgroundColor: Colors.white.withValues(alpha: 0.18),
             foregroundColor: Colors.white,
             child: Text(
               user.name.isNotEmpty ? user.name[0].toUpperCase() : 'N',

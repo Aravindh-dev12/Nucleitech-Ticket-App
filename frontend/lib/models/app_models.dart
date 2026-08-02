@@ -19,11 +19,9 @@ class AppUser {
   final int? plantId;
   final String? plantName;
 
-  bool get isSupport =>
-      role == 'support_engineer' || role == 'nuclei_admin';
+  bool get isSupport => role == 'support_engineer' || role == 'nuclei_admin';
 
-  bool get canRaise =>
-      role == 'company_admin' || role == 'plant_user';
+  bool get canRaise => role == 'company_admin' || role == 'plant_user';
 
   String get roleLabel => prettyLabel(role);
 
@@ -135,8 +133,7 @@ class TicketSummary {
       companyName: json['company_name']?.toString() ?? '',
       plantName: json['plant_name']?.toString() ?? '',
       createdAt: json['created_at']?.toString() ?? '',
-      attachmentCount:
-          int.tryParse(json['attachment_count'].toString()) ?? 0,
+      attachmentCount: int.tryParse(json['attachment_count'].toString()) ?? 0,
       capacityMw: _nullableDouble(json['capacity_mw']),
       scadaSiteId: json['scada_site_id']?.toString(),
     );
@@ -222,7 +219,8 @@ double? _nullableDouble(dynamic value) {
 
 bool _toBool(dynamic value) {
   if (value is bool) return value;
-  return value == 1 || value?.toString() == '1' ||
+  return value == 1 ||
+      value?.toString() == '1' ||
       value?.toString().toLowerCase() == 'true';
 }
 

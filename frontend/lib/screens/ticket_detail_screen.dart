@@ -17,8 +17,7 @@ class TicketDetailScreen extends StatefulWidget {
   final int ticketId;
 
   @override
-  State<TicketDetailScreen> createState() =>
-      _TicketDetailScreenState();
+  State<TicketDetailScreen> createState() => _TicketDetailScreenState();
 }
 
 class _TicketDetailScreenState extends State<TicketDetailScreen> {
@@ -94,7 +93,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: selected,
+                  initialValue: selected,
                   decoration: const InputDecoration(labelText: 'Status'),
                   items: _statuses
                       .map(
