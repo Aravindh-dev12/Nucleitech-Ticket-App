@@ -9,21 +9,23 @@ return [
     'db_password' => '',
 
     // Public URL of this backend, without a trailing slash.
-    'app_url' => 'http://localhost:8080',
-    'allowed_origins' => ['*'],
+    'app_url' => 'https://YOUR_TICKET_DOMAIN',
+    'allowed_origins' => ['https://YOUR_APP_DOMAIN'],
 
-    'owner_email' => 'nfo.nucleitech@gmail.com',
+    // Manual ticket workflow mailbox. New plant tickets are delivered here.
+    'owner_email' => 'info@orikscare.com',
     'mail_from_name' => 'NUCLEI TECH Support',
-    'mail_from_address' => 'nfo.nucleitech@gmail.com',
+    'mail_from_address' => 'info@orikscare.com',
 
-    // Set enabled=true and use a Gmail App Password for real delivery.
+    // Configure this for the actual provider hosting info@orikscare.com.
+    // Never commit the live mailbox password to GitHub.
     'smtp' => [
-        'enabled' => false,
-        'host' => 'smtp.gmail.com',
+        'enabled' => true,
+        'host' => 'smtp.example.com',
         'port' => 587,
         'encryption' => 'tls',
-        'username' => 'nfo.nucleitech@gmail.com',
-        'password' => 'PUT_GMAIL_APP_PASSWORD_HERE',
+        'username' => 'info@orikscare.com',
+        'password' => getenv('NUCLEI_SMTP_PASSWORD') ?: '',
     ],
 
     'max_image_bytes' => 10 * 1024 * 1024,
