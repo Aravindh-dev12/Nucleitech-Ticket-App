@@ -51,7 +51,7 @@ class NucleiTechApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: colorScheme,
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: const Color(0xFFF9FBFE),
         canvasColor: Colors.white,
         dividerColor: borderBlue,
         appBarTheme: const AppBarTheme(
@@ -60,7 +60,7 @@ class NucleiTechApp extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           scrolledUnderElevation: 1,
-          centerTitle: false,
+          centerTitle: true,
           iconTheme: IconThemeData(color: Colors.white),
           actionsIconTheme: IconThemeData(color: Colors.white),
           titleTextStyle: TextStyle(
@@ -80,10 +80,11 @@ class NucleiTechApp extends StatelessWidget {
         cardTheme: CardThemeData(
           color: Colors.white,
           surfaceTintColor: Colors.transparent,
-          elevation: 0,
+          elevation: 1,
+          shadowColor: const Color(0x22084298),
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
             side: const BorderSide(color: borderBlue),
           ),
         ),
@@ -123,7 +124,7 @@ class NucleiTechApp extends StatelessWidget {
             foregroundColor: Colors.white,
             disabledBackgroundColor: const Color(0xFFA9C7F2),
             disabledForegroundColor: Colors.white,
-            minimumSize: const Size(0, 50),
+            minimumSize: const Size(0, 52),
             textStyle: const TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 15,
@@ -136,7 +137,7 @@ class NucleiTechApp extends StatelessWidget {
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             foregroundColor: primaryBlue,
-            minimumSize: const Size(0, 46),
+            minimumSize: const Size(0, 48),
             side: const BorderSide(color: primaryBlue),
             textStyle: const TextStyle(fontWeight: FontWeight.w800),
             shape: RoundedRectangleBorder(
