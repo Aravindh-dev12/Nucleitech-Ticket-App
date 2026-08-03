@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/app_models.dart';
 import '../services/api_service.dart';
+import '../widgets/brand_logo.dart';
 import '../widgets/common_widgets.dart';
 
 class RaiseTicketScreen extends StatefulWidget {
@@ -101,23 +102,27 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
             color: Colors.green,
             size: 56,
           ),
-          title: const Text('Ticket Sent Successfully'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'NUCLEI TECH has received this plant issue. The owner account and email receiver have been notified.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 14),
-              SelectableText(
-                ticketNumber,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 17,
+          title: const Text('Ticket Raised Successfully'),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Your plant issue has been recorded and the complete ticket details have been sent to info@orikscare.com. NUCLEI TECH support will review the issue and resolve it manually.',
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ],
+                const SizedBox(height: 14),
+                SelectableText(
+                  ticketNumber,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    color: Color(0xFF084298),
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             FilledButton(
@@ -141,164 +146,266 @@ class _RaiseTicketScreenState extends State<RaiseTicketScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Raise Plant Ticket')),
+      appBar: AppBar(
+        title: const Text('Raise Plant Ticket'),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.plant.plantName,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w900),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(widget.plant.companyName),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                children: [
+                  const Center(child: BrandLogo(width: 230, height: 74)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Report a Plant Issue',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF084298),
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Submit the issue with clear plant and fault details. Support receives the ticket by email and will update the resolution manually.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF5B6B82), height: 1.45),
+                  ),
+                  const SizedBox(height: 22),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          StatusBadge(value: widget.plant.capacityLabel),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const CircleAvatar(
+                                radius: 24,
+                                backgroundColor: Color(0xFFE7F0FF),
+                                foregroundColor: Color(0xFF0B5ED7),
+                                child: Icon(Icons.solar_power_outlined),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.plant.plantName,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(widget.plant.companyName),
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        StatusBadge(
+                                          value: widget.plant.capacityLabel,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(13),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7FBFF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFD8E6FA),
+                              ),
+                            ),
+                            child: const Text(
+                              'This plant is attached automatically to the ticket. The email sent to support includes the ticket number, company, plant name, issue category, priority, user details and description.',
+                              style: TextStyle(
+                                color: Color(0xFF41536D),
+                                height: 1.45,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              DropdownButtonFormField<String>(
-                initialValue: _category,
-                decoration: const InputDecoration(
-                  labelText: 'Issue Category',
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                items: _categories
-                    .map(
-                      (item) => DropdownMenuItem(
-                        value: item,
-                        child: Text(item),
+                  const SizedBox(height: 18),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          DropdownButtonFormField<String>(
+                            initialValue: _category,
+                            decoration: const InputDecoration(
+                              labelText: 'Issue Category',
+                              prefixIcon: Icon(Icons.category_outlined),
+                            ),
+                            items: _categories
+                                .map(
+                                  (item) => DropdownMenuItem(
+                                    value: item,
+                                    child: Text(item),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _category = value);
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _subjectController,
+                            maxLength: 255,
+                            decoration: const InputDecoration(
+                              labelText: 'Issue Title',
+                              hintText: 'Example: Inverter 1 data is not coming',
+                              prefixIcon: Icon(Icons.title),
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().length < 5
+                                    ? 'Enter a clear issue title.'
+                                    : null,
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _descriptionController,
+                            minLines: 5,
+                            maxLines: 10,
+                            decoration: const InputDecoration(
+                              labelText: 'Issue Description',
+                              hintText:
+                                  'Mention the inverter/VCB/device name, observed fault, error code if any, when the issue started, and checks already completed.',
+                              alignLabelWithHint: true,
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().length < 10
+                                    ? 'Describe the issue in more detail.'
+                                    : null,
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            initialValue: _priority,
+                            decoration: const InputDecoration(
+                              labelText: 'Priority',
+                              prefixIcon: Icon(Icons.priority_high),
+                            ),
+                            items: _priorities
+                                .map(
+                                  (item) => DropdownMenuItem(
+                                    value: item,
+                                    child: Text(prettyLabel(item)),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _priority = value);
+                              }
+                            },
+                          ),
+                        ],
                       ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _category = value);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _subjectController,
-                maxLength: 255,
-                decoration: const InputDecoration(
-                  labelText: 'Issue Title',
-                  hintText: 'Example: Inverter 3 is showing a fault',
-                  prefixIcon: Icon(Icons.title),
-                ),
-                validator: (value) => value == null || value.trim().length < 5
-                    ? 'Enter a clear issue title.'
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _descriptionController,
-                minLines: 5,
-                maxLines: 10,
-                decoration: const InputDecoration(
-                  labelText: 'Issue Description',
-                  hintText:
-                      'Explain the fault, device name, error code, time, and what was already checked.',
-                  alignLabelWithHint: true,
-                ),
-                validator: (value) => value == null || value.trim().length < 10
-                    ? 'Describe the issue in more detail.'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _priority,
-                decoration: const InputDecoration(
-                  labelText: 'Priority',
-                  prefixIcon: Icon(Icons.priority_high),
-                ),
-                items: _priorities
-                    .map(
-                      (item) => DropdownMenuItem(
-                        value: item,
-                        child: Text(prettyLabel(item)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _priority = value);
-                },
-              ),
-              const SizedBox(height: 22),
-              Text(
-                'Issue Images',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 7),
-              const Text('Add up to six images from the camera or gallery.'),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _images.length >= 6 ? null : _takePhoto,
-                    icon: const Icon(Icons.camera_alt_outlined),
-                    label: const Text('Camera'),
+                    ),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: _images.length >= 6 ? null : _pickImages,
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('Gallery'),
+                  const SizedBox(height: 18),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Issue Images',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 7),
+                          const Text(
+                            'Attach up to six images to help support understand the issue.',
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed:
+                                    _images.length >= 6 ? null : _takePhoto,
+                                icon: const Icon(Icons.camera_alt_outlined),
+                                label: const Text('Camera'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed:
+                                    _images.length >= 6 ? null : _pickImages,
+                                icon: const Icon(Icons.photo_library_outlined),
+                                label: const Text('Gallery'),
+                              ),
+                            ],
+                          ),
+                          if (_images.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                for (var index = 0;
+                                    index < _images.length;
+                                    index++)
+                                  _ImagePreview(
+                                    file: _images[index],
+                                    onRemove: () {
+                                      setState(() => _images.removeAt(index));
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  FilledButton.icon(
+                    onPressed: _submitting ? null : _submit,
+                    icon: _submitting
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.send_outlined),
+                    label: Text(
+                      _submitting
+                          ? 'Submitting Ticket...'
+                          : 'Submit Ticket to NUCLEI TECH',
+                    ),
                   ),
                 ],
               ),
-              if (_images.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (var index = 0; index < _images.length; index++)
-                      _ImagePreview(
-                        file: _images[index],
-                        onRemove: () {
-                          setState(() => _images.removeAt(index));
-                        },
-                      ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 28),
-              FilledButton.icon(
-                onPressed: _submitting ? null : _submit,
-                icon: _submitting
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send),
-                label: Text(
-                  _submitting ? 'Sending Ticket...' : 'Send Ticket',
-                ),
-              ),
-              const SizedBox(height: 30),
-            ],
+            ),
           ),
         ),
       ),
