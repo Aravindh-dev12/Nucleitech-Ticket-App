@@ -225,34 +225,55 @@ class _NotificationBell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = count > 99 ? '99+' : '$count';
+    const notificationRed = Color(0xFFD32F2F);
 
     return SizedBox(
-      width: 34,
-      height: 34,
+      width: 42,
+      height: 42,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          Icon(
-            count > 0
-                ? Icons.notifications_active_outlined
-                : Icons.notifications_outlined,
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: notificationRed,
+                width: 1.8,
+              ),
+            ),
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: notificationRed,
+              size: 21,
+            ),
           ),
           if (count > 0)
             Positioned(
-              right: -4,
-              top: -5,
+              right: 0,
+              top: 0,
               child: Container(
                 constraints: const BoxConstraints(
-                  minWidth: 18,
-                  minHeight: 18,
+                  minWidth: 19,
+                  minHeight: 19,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD32F2F),
+                  color: notificationRed,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.white, width: 1.5),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x22000000),
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
                 ),
                 child: Text(
                   label,
