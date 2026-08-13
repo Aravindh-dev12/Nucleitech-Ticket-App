@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../config.dart';
 import '../models/app_models.dart';
 import '../services/api_service.dart';
+import '../widgets/brand_logo.dart';
 import '../widgets/common_widgets.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
@@ -20,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Plant>> _future;
+  late Future<List<Map<String, dynamic>>> _notificationsFuture;
   Timer? _timer;
 
   AppUser get user => ApiService.instance.currentUser!;
@@ -28,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _future = ApiService.instance.getPlants();
+    _notificationsFuture = ApiService.instance.getNotifications();
     _timer = Timer.periodic(AppConfig.refreshInterval, (_) => _reload());
   }
 
@@ -39,7 +42,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _reload() {
     if (!mounted) return;
-    setState(() => _future = ApiService.instance.getPlants());
+    setState(() {
+      _future = ApiService.instance.getPlants();
+      _notificationsFuture = ApiService.instance.getNotifications();
+    });
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const NotificationsScreen(),
+      ),
+    );
+    _reload();
   }
 
   Future<void> _logout() async {
@@ -55,16 +70,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NUCLEI TECH'),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0B5ED7),
+        surfaceTintColor: Colors.white,
+        titleSpacing: 16,
+        title: const BrandLogo(
+          width: 170,
+          height: 42,
+          fit: BoxFit.contain,
+        ),
         actions: [
           IconButton(
             tooltip: 'Notifications',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const NotificationsScreen(),
-              ),
+            onPressed: _openNotifications,
+            icon: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _notificationsFuture,
+              builder: (context, snapshot) {
+                final notifications =
+                    snapshot.data ?? const <Map<String, dynamic>>[];
+                final unreadCount = notifications
+                    .where((item) => item['is_read'] != true)
+                    .length;
+
+                return _NotificationBell(count: unreadCount);
+              },
             ),
-            icon: const Icon(Icons.notifications_outlined),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -182,6 +212,60 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NotificationBell extends StatelessWidget {
+  const _NotificationBell({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 99 ? '99+' : '$count';
+
+    return SizedBox(
+      width: 34,
+      height: 34,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Icon(
+            count > 0
+                ? Icons.notifications_active_outlined
+                : Icons.notifications_outlined,
+          ),
+          if (count > 0)
+            Positioned(
+              right: -4,
+              top: -5,
+              child: Container(
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD32F2F),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
