@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout),
+                    Icon(Icons.logout, color: Colors.red),
                     SizedBox(width: 10),
                     Text('Sign out'),
                   ],
@@ -237,6 +237,8 @@ class _NotificationBell extends StatelessWidget {
             count > 0
                 ? Icons.notifications_active_outlined
                 : Icons.notifications_outlined,
+            color: Colors.black,
+            size: 24,
           ),
           if (count > 0)
             Positioned(
