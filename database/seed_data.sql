@@ -17,6 +17,24 @@ SET @ws_url = 'wss://vinobasolar.scadahub.in:5001';
 SET @subscription = JSON_OBJECT('action', 'subscribe', 'siteId', '{{site_id}}');
 
 INSERT INTO plants
+  (company_id, plant_id, name, email, password_hash, role, is_active)
+SELECT NULL, NULL, 'NUCLEI TECH Admin', 'admin@nuclei.com',
+       '$2y$12$1tH6hW7QfEa8gRhBwOCE2uM99vwrhtLmYzILF.pIbJdcCO0xvjkJu', 'nuclei_admin', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM users WHERE role='nuclei_admin'
+);
+
+UPDATE users
+SET
+  company_id = NULL,
+  plant_id = NULL,
+  name = 'NUCLEI TECH Admin',
+  email = 'admin@nuclei.com',
+  password_hash = '$2y$12$1tH6hW7QfEa8gRhBwOCE2uM99vwrhtLmYzILF.pIbJdcCO0xvjkJu',
+  is_active = 1
+WHERE role = 'nuclei_admin';
+
+INSERT INTO plants
   (company_id, plant_code, ticket_prefix, plant_name, capacity_mw, scada_site_id,
    websocket_url, subscription_payload, scada_enabled, is_active)
 VALUES
@@ -47,8 +65,6 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO users
   (company_id, plant_id, name, email, password_hash, role, is_active)
 VALUES
-  (NULL, NULL, 'NUCLEI TECH Admin', 'admin@nuclei.com',
-   '$2y$12$1tH6hW7QfEa8gRhBwOCE2uM99vwrhtLmYzILF.pIbJdcCO0xvjkJu', 'nuclei_admin', 1),
   (@vj_company_id, NULL, 'Vijayanth Admin', 'vijayanth@scada.com',
    '$2y$12$sXyvDkd26ZwJOqzsqpr10OmHbM41zOHKaIDErSmC2/1k21xrUGwsq', 'company_admin', 1),
   (@vs_company_id, NULL, 'Vinoba Solar Admin', 'vinobasolar@scada.com',
