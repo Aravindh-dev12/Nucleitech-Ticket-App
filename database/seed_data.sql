@@ -16,7 +16,7 @@ SET @vs_company_id = (SELECT id FROM companies WHERE company_code = 'VS' LIMIT 1
 SET @ws_url = 'wss://vinobasolar.scadahub.in:5001';
 SET @subscription = JSON_OBJECT('action', 'subscribe', 'siteId', '{{site_id}}');
 
-INSERT INTO plants
+INSERT INTO users
   (company_id, plant_id, name, email, password_hash, role, is_active)
 SELECT NULL, NULL, 'NUCLEI TECH Admin', 'admin@nuclei.com',
        '$2y$12$1tH6hW7QfEa8gRhBwOCE2uM99vwrhtLmYzILF.pIbJdcCO0xvjkJu', 'nuclei_admin', 1
