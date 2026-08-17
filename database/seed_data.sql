@@ -47,7 +47,7 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO users
   (company_id, plant_id, name, email, password_hash, role, is_active)
 VALUES
-  (NULL, NULL, 'NUCLEI TECH Owner', 'nfo.nucleitech@gmail.com',
+  (NULL, NULL, 'NUCLEI TECH Admin', 'admin@nuclei.com',
    '$2y$12$1tH6hW7QfEa8gRhBwOCE2uM99vwrhtLmYzILF.pIbJdcCO0xvjkJu', 'nuclei_admin', 1),
   (@vj_company_id, NULL, 'Vijayanth Admin', 'vijayanth@scada.com',
    '$2y$12$sXyvDkd26ZwJOqzsqpr10OmHbM41zOHKaIDErSmC2/1k21xrUGwsq', 'company_admin', 1),
