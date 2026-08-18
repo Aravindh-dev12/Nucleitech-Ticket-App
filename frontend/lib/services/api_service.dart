@@ -149,20 +149,46 @@ class ApiService {
       ..fields['description'] = description
       ..fields['priority'] = priority;
 
-    for (final image in images) {
-      final Uint8List bytes = await image.readAsBytes();
+    for (var index = 0; index < images.length; index++) {
+      final image = images[index];
+      final Uint8List bytes;
+      try {
+        bytes = await image.readAsBytes();
+      } catch (_) {
+        throw ApiException('Unable to read image ${index + 1}. Please select it again.');
+      }
+
+      if (bytes.isEmpty) {
+        throw ApiException('Image ${index + 1} is empty. Please select it again.');
+      }
+
+      var filename = image.name.trim();
+      if (filename.isEmpty) {
+        filename = 'ticket_image_${DateTime.now().millisecondsSinceEpoch}_$index.jpg';
+      } else if (!filename.contains('.')) {
+        filename = '$filename.jpg';
+      }
+
       request.files.add(
         http.MultipartFile.fromBytes(
           'images[]',
           bytes,
-          filename: image.name,
+          filename: filename,
         ),
       );
     }
 
-    final streamed = await request.send();
-    final response = await http.Response.fromStream(streamed);
-    return _decode(response);
+    try {
+      final streamed = await request.send().timeout(const Duration(seconds: 90));
+      final response = await http.Response.fromStream(streamed);
+      return _decode(response);
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException(
+        'Image upload failed. Check your internet connection and try again.',
+      );
+    }
   }
 
   Future<void> addComment({
@@ -212,11 +238,78 @@ class ApiService {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getPlantUsers(int plantId) async {
+    final result = await _adminRequest(
+      'plant_users',
+      query: {'plant_id': '$plantId'},
+    );
+    return (result['users'] as List<dynamic>? ?? [])
+        .map((item) => item as Map<String, dynamic>)
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> createPlantLogin({
+    required int plantId,
+    required String name,
+    required String email,
+    required String password,
+    String phone = '',
+  }) {
+    return _adminRequest(
+      'create_plant_login',
+      method: 'POST',
+      body: {
+        'plant_id': plantId,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+      },
+    );
+  }
+
   Map<String, String> _headers() {
     return {
       'Accept': 'application/json',
       if (_token != null) 'Authorization': 'Bearer $_token',
     };
+  }
+
+  Uri _adminUri(String action, Map<String, String>? query) {
+    final apiUri = Uri.parse(AppConfig.apiBaseUrl);
+    final segments = [...apiUri.pathSegments];
+    if (segments.isNotEmpty) {
+      segments[segments.length - 1] = 'admin.php';
+    }
+    return apiUri.replace(
+      pathSegments: segments,
+      queryParameters: {'action': action, ...?query},
+    );
+  }
+
+  Future<Map<String, dynamic>> _adminRequest(
+    String action, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+    Map<String, String>? query,
+  }) async {
+    final uri = _adminUri(action, query);
+    final headers = {
+      ..._headers(),
+      'Content-Type': 'application/json',
+    };
+
+    final http.Response response;
+    if (method == 'POST') {
+      response = await http
+          .post(uri, headers: headers, body: jsonEncode(body ?? {}))
+          .timeout(const Duration(seconds: 30));
+    } else {
+      response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
+    }
+    return _decode(response);
   }
 
   Future<Map<String, dynamic>> _request(
