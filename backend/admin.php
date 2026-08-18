@@ -123,12 +123,55 @@ function fetchPlant(mysqli $db, int $plantId): ?array
     return $plant;
 }
 
+function normalizePlantUser(array &$user): void
+{
+    $user['id'] = (int) $user['id'];
+    $user['plant_id'] = (int) $user['plant_id'];
+    $user['company_id'] = (int) $user['company_id'];
+    $user['is_active'] = (bool) $user['is_active'];
+}
+
+function listPlantUsers(mysqli $db, ?int $plantId = null): array
+{
+    $sql =
+        "SELECT u.id,u.company_id,u.plant_id,u.name,u.email,u.phone,u.is_active,u.created_at,u.updated_at,
+                p.plant_name,c.company_name
+         FROM users u
+         JOIN plants p ON p.id=u.plant_id
+         JOIN companies c ON c.id=u.company_id
+         WHERE u.role='plant_user'";
+
+    if ($plantId !== null) {
+        $sql .= ' AND u.plant_id=?';
+    }
+    $sql .= ' ORDER BY c.company_name,p.plant_name,u.name,u.email';
+
+    $stmt = $db->prepare($sql);
+    if ($plantId !== null) {
+        $stmt->bind_param('i', $plantId);
+    }
+    $stmt->execute();
+    $users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    foreach ($users as &$user) {
+        normalizePlantUser($user);
+    }
+    return $users;
+}
+
 try {
     $db = db($config);
     $admin = requireNucleiAdmin($db);
     $action = $_GET['action'] ?? '';
 
     switch ($action) {
+        case 'all_plant_users':
+            $users = listPlantUsers($db);
+            respond([
+                'success' => true,
+                'total' => count($users),
+                'users' => $users,
+            ]);
+
         case 'plant_users':
             $plantId = (int) ($_GET['plant_id'] ?? 0);
             $plant = fetchPlant($db, $plantId);
@@ -136,23 +179,11 @@ try {
                 respond(['success' => false, 'message' => 'Select a valid active plant.'], 404);
             }
 
-            $stmt = $db->prepare(
-                "SELECT id,name,email,phone,is_active,created_at
-                 FROM users
-                 WHERE plant_id=? AND role='plant_user'
-                 ORDER BY name,email"
-            );
-            $stmt->bind_param('i', $plantId);
-            $stmt->execute();
-            $users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-            foreach ($users as &$user) {
-                $user['id'] = (int) $user['id'];
-                $user['is_active'] = (bool) $user['is_active'];
-            }
-
+            $users = listPlantUsers($db, $plantId);
             respond([
                 'success' => true,
                 'plant' => $plant,
+                'total' => count($users),
                 'users' => $users,
             ]);
 
@@ -191,12 +222,12 @@ try {
 
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             $companyId = (int) $plant['company_id'];
+            $phoneValue = $phone !== '' ? $phone : null;
             $stmt = $db->prepare(
                 "INSERT INTO users
                     (company_id,plant_id,name,email,phone,password_hash,role,is_active)
                  VALUES (?,?,?,?,?,?,'plant_user',1)"
             );
-            $phoneValue = $phone !== '' ? $phone : null;
             $stmt->bind_param(
                 'iissss',
                 $companyId,
@@ -223,16 +254,120 @@ try {
                 'message' => 'Plant login created successfully.',
                 'user' => [
                     'id' => $newUserId,
+                    'company_id' => $companyId,
+                    'plant_id' => $plantId,
                     'name' => $name,
                     'email' => $email,
                     'phone' => $phoneValue,
                     'role' => 'plant_user',
-                    'plant_id' => $plantId,
                     'plant_name' => $plant['plant_name'],
                     'company_name' => $plant['company_name'],
                     'is_active' => true,
                 ],
             ], 201);
+
+        case 'update_plant_login':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                respond(['success' => false, 'message' => 'POST is required.'], 405);
+            }
+
+            $input = requestBody();
+            $userId = (int) ($input['user_id'] ?? 0);
+            $plantId = (int) ($input['plant_id'] ?? 0);
+            $name = trim((string) ($input['name'] ?? ''));
+            $email = strtolower(trim((string) ($input['email'] ?? '')));
+            $phone = trim((string) ($input['phone'] ?? ''));
+            $password = (string) ($input['password'] ?? '');
+            $isActive = !empty($input['is_active']) ? 1 : 0;
+
+            if ($userId <= 0) {
+                respond(['success' => false, 'message' => 'Select a valid user account.'], 422);
+            }
+
+            $stmt = $db->prepare(
+                "SELECT id FROM users WHERE id=? AND role='plant_user' LIMIT 1"
+            );
+            $stmt->bind_param('i', $userId);
+            $stmt->execute();
+            if (!$stmt->get_result()->fetch_assoc()) {
+                respond(['success' => false, 'message' => 'Plant user account was not found.'], 404);
+            }
+
+            $plant = fetchPlant($db, $plantId);
+            if (!$plant) {
+                respond(['success' => false, 'message' => 'Select a valid active plant.'], 422);
+            }
+            if (strlen($name) < 2) {
+                respond(['success' => false, 'message' => 'Enter the login user name.'], 422);
+            }
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                respond(['success' => false, 'message' => 'Enter a valid login email address.'], 422);
+            }
+            if ($password !== '' && strlen($password) < 8) {
+                respond(['success' => false, 'message' => 'New password must contain at least 8 characters.'], 422);
+            }
+
+            $stmt = $db->prepare("SELECT id FROM users WHERE email=? AND id<>? LIMIT 1");
+            $stmt->bind_param('si', $email, $userId);
+            $stmt->execute();
+            if ($stmt->get_result()->fetch_assoc()) {
+                respond(['success' => false, 'message' => 'Another user already uses this email address.'], 409);
+            }
+
+            $companyId = (int) $plant['company_id'];
+            $phoneValue = $phone !== '' ? $phone : null;
+
+            if ($password !== '') {
+                $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $db->prepare(
+                    "UPDATE users
+                     SET company_id=?,plant_id=?,name=?,email=?,phone=?,password_hash=?,is_active=?,
+                         auth_token=NULL,token_created_at=NULL
+                     WHERE id=? AND role='plant_user'"
+                );
+                $stmt->bind_param(
+                    'iissssii',
+                    $companyId,
+                    $plantId,
+                    $name,
+                    $email,
+                    $phoneValue,
+                    $passwordHash,
+                    $isActive,
+                    $userId
+                );
+            } else {
+                $stmt = $db->prepare(
+                    "UPDATE users
+                     SET company_id=?,plant_id=?,name=?,email=?,phone=?,is_active=?,
+                         auth_token=NULL,token_created_at=NULL
+                     WHERE id=? AND role='plant_user'"
+                );
+                $stmt->bind_param(
+                    'iisssii',
+                    $companyId,
+                    $plantId,
+                    $name,
+                    $email,
+                    $phoneValue,
+                    $isActive,
+                    $userId
+                );
+            }
+            $stmt->execute();
+
+            error_log(
+                sprintf(
+                    'Plant login %d updated by NUCLEI admin %d',
+                    $userId,
+                    $admin['id']
+                )
+            );
+
+            respond([
+                'success' => true,
+                'message' => 'Plant login updated successfully.',
+            ]);
 
         default:
             respond(['success' => false, 'message' => 'Unknown admin action.'], 404);
