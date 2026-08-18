@@ -10,6 +10,7 @@ import '../widgets/common_widgets.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
 import 'plant_dashboard_screen.dart';
+import 'plant_login_admin_screen.dart';
 import 'tickets_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -57,7 +58,36 @@ class _HomeScreenState extends State<HomeScreen> {
     _reload();
   }
 
+  Future<void> _openPlantLogins() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const PlantLoginAdminScreen(),
+      ),
+    );
+    _reload();
+  }
+
   Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text('Do you want to sign out of NUCLEI TECH?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     await ApiService.instance.logout();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
@@ -80,6 +110,15 @@ class _HomeScreenState extends State<HomeScreen> {
           fit: BoxFit.contain,
         ),
         actions: [
+          if (user.role == 'nuclei_admin')
+            IconButton(
+              tooltip: 'Create plant login',
+              onPressed: _openPlantLogins,
+              icon: const Icon(
+                Icons.manage_accounts_outlined,
+                color: Color(0xFF0B5ED7),
+              ),
+            ),
           IconButton(
             tooltip: 'Notifications',
             onPressed: _openNotifications,
@@ -96,23 +135,16 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'logout') _logout();
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.red),
-                    SizedBox(width: 10),
-                    Text('Sign out'),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            tooltip: 'Sign out',
+            onPressed: _logout,
+            icon: const Icon(
+              Icons.logout,
+              color: Colors.red,
+              size: 24,
+            ),
           ),
+          const SizedBox(width: 6),
         ],
       ),
       body: RefreshIndicator(
