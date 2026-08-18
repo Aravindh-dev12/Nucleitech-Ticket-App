@@ -238,6 +238,13 @@ class ApiService {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getAllPlantUsers() async {
+    final result = await _adminRequest('all_plant_users');
+    return (result['users'] as List<dynamic>? ?? [])
+        .map((item) => item as Map<String, dynamic>)
+        .toList();
+  }
+
   Future<List<Map<String, dynamic>>> getPlantUsers(int plantId) async {
     final result = await _adminRequest(
       'plant_users',
@@ -264,6 +271,30 @@ class ApiService {
         'email': email,
         'phone': phone,
         'password': password,
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> updatePlantLogin({
+    required int userId,
+    required int plantId,
+    required String name,
+    required String email,
+    required bool isActive,
+    String phone = '',
+    String password = '',
+  }) {
+    return _adminRequest(
+      'update_plant_login',
+      method: 'POST',
+      body: {
+        'user_id': userId,
+        'plant_id': plantId,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'is_active': isActive,
       },
     );
   }
